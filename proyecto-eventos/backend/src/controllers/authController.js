@@ -74,4 +74,28 @@ async function perfil(req, res) {
   }
 }
 
-module.exports = { registrar, login, perfil };
+// POST /api/auth/promover-admin (endpoint temporal protegido por clave secreta,
+// util para el primer despliegue cuando no se tiene acceso a Shell)
+async function promoverAdmin(req, res) {
+  try {
+    const { email, clave } = req.body;
+
+    if (clave !== process.env.ADMIN_SETUP_KEY) {
+      return res.status(403).json({ error: 'Clave invalida' });
+    }
+
+    const usuario = await Usuario.findOne({ where: { email } });
+    if (!usuario) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    usuario.rol = 'admin';
+    await usuario.save();
+
+    return res.json({ mensaje: `Usuario ${email} ahora es admin` });
+  } catch (error) {
+    return res.status(500).json({ error: 'Error al promover usuario' });
+  }
+}
+
+module.exports = { registrar, login, perfil, promoverAdmin };
